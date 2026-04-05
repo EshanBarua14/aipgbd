@@ -1,0 +1,9 @@
+.faq { background: var(--bg-1); border-top: 1px solid rgba(255,255,255,0.05); }
+.faq__list { margin-top: 3rem; display: flex; flex-direction: column; }
+.faq__item { border-bottom: 1px solid rgba(255,255,255,0.05); opacity: 0; transform: translateY(16px); transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out); }
+.faq__item--visible { opacity: 1; transform: none; }
+.faq__q { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.4rem 0; background: none; border: none; color: var(--text); font-family: var(--font-body); font-size: 0.95rem; font-weight: 400; text-align: left; cursor: pointer; transition: color 0.25s; }
+.faq__q:hover { color: var(--gold); }
+.faq__icon { font-size: 1.2rem; color: var(--gold); flex-shrink: 0; }
+.faq__a { padding-bottom: 1.4rem; animation: fadeIn 0.3s ease; }
+.faq__a p { font-size: 0.88rem; color: var(--text-mid); line-height: 1.85; max-width: 700px; }
