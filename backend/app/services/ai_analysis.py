@@ -261,10 +261,10 @@ def check_liveness_challenge(b64: str, challenge: str) -> dict:
         passed = analysis["blink_detected"]
         reason = "Please blink your eyes" if not passed else "✓ Blink detected"
     elif challenge == "left":
-        passed = analysis["head_direction"] == "left"
+        passed = analysis["head_direction"] == "right"
         reason = "Turn your head to the LEFT" if not passed else "✓ Left turn detected"
     elif challenge == "right":
-        passed = analysis["head_direction"] == "right"
+        passed = analysis["head_direction"] == "left"
         reason = "Turn your head to the RIGHT" if not passed else "✓ Right turn detected"
     elif challenge == "smile":
         passed = analysis["is_smiling"]
