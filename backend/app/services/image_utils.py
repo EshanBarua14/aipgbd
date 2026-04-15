@@ -22,13 +22,17 @@ def _get_net():
     return _NET
 
 
-def b64_to_numpy(b64: str) -> np.ndarray:
-    """Decode base64 image string to RGB numpy array."""
+def b64_to_numpy(b64: str, max_size: int = 1200) -> np.ndarray:
+    """Decode base64 image string to RGB numpy array. Caps at max_size to prevent OOM."""
     try:
         if "," in b64:
             b64 = b64.split(",")[1]
         raw = base64.b64decode(b64)
         pil = Image.open(io.BytesIO(raw)).convert("RGB")
+        w, h = pil.size
+        if max(w, h) > max_size:
+            scale = max_size / max(w, h)
+            pil = pil.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
         return np.array(pil)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Image decode failed: {str(e)}")
@@ -69,7 +73,12 @@ def detect_face(img_rgb: np.ndarray, conf_threshold: float = 0.3):
 
 def _dnn_detect(img_rgb: np.ndarray, conf_threshold: float = 0.3):
     """DNN-based face detection — works on low-quality/document photos."""
+    # Hard cap to prevent OOM on large images
     h, w = img_rgb.shape[:2]
+    if max(h, w) > 640:
+        scale = 640 / max(h, w)
+        img_rgb = cv2.resize(img_rgb, (int(w*scale), int(h*scale)))
+        h, w = img_rgb.shape[:2]
     net  = _get_net()
 
     # Preprocess: DNN needs BGR
@@ -109,6 +118,11 @@ def _dnn_detect(img_rgb: np.ndarray, conf_threshold: float = 0.3):
 def _haar_detect(img_rgb: np.ndarray):
     """Haar cascade fallback."""
     h, w = img_rgb.shape[:2]
+    # Hard cap — Haar on large images causes OOM
+    if max(h, w) > 640:
+        scale = 640 / max(h, w)
+        img_rgb = cv2.resize(img_rgb, (int(w*scale), int(h*scale)))
+        h, w = img_rgb.shape[:2]
     gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
     cascade = cv2.CascadeClassifier(
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"

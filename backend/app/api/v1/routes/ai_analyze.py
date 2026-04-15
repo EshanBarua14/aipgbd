@@ -117,12 +117,13 @@ async def challenge(req: ChallengeRequest):
 @router.post("/scan-nid", summary="NID card scan quality check")
 async def scan_nid(req: NIDScanRequest):
     img  = b64_to_numpy(req.image_b64)
-    # Resize large images to max 1200px to prevent memory issues
+    # Cap at 800px to prevent memory errors on large scans
     h, w = img.shape[:2]
-    if max(h, w) > 1200:
-        scale = 1200 / max(h, w)
-        img   = cv2.resize(img, (int(w*scale), int(h*scale)))
-        h, w  = img.shape[:2]
+    if max(h, w) > 800:
+        scale = 800 / max(h, w)
+        new_w, new_h = int(w * scale), int(h * scale)
+        img  = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        h, w = img.shape[:2]
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
     # Quality checks
