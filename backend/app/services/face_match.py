@@ -150,45 +150,32 @@ def pixel_similarity(g1: np.ndarray, g2: np.ndarray) -> float:
 
 
 def compare_faces(face1_rgb: np.ndarray, face2_rgb: np.ndarray) -> dict:
-    """
-    NID-aware face comparison pipeline.
-
-    Weights tuned for NID document vs live selfie:
-    - SSIM:       35% — best structural measure for doc photos
-    - Histogram:  30% — works after CLAHE equalization
-    - ORB:        25% — feature points with Lowe's ratio test
-    - Pixel:      10% — supporting signal
-
-    Thresholds lowered for NID context (printed photo degradation).
-    """
-    # Preprocess both faces (grayscale + CLAHE + normalize)
     g1 = preprocess_face(face1_rgb)
     g2 = preprocess_face(face2_rgb)
-
-    hist_score  = histogram_similarity(g1, g2)
-    orb_score   = orb_similarity(g1, g2)
-    ssim_score  = ssim_similarity(g1, g2)
-    pix_score   = pixel_similarity(g1, g2)
-
-    # Weighted final
+    hist_score = histogram_similarity(g1, g2)
+    orb_score  = orb_similarity(g1, g2)
+    ssim_score = ssim_similarity(g1, g2)
+    pix_score  = pixel_similarity(g1, g2)
+    try:
+        lm_score = landmark_similarity(face1_rgb, face2_rgb)
+    except Exception:
+        lm_score = 0.0
     final = (
-        ssim_score  * 0.20 +
-        hist_score  * 0.35 +
-        orb_score   * 0.35 +
-        pix_score   * 0.10
+        lm_score   * 0.40 +
+        orb_score  * 0.25 +
+        hist_score * 0.20 +
+        ssim_score * 0.10 +
+        pix_score  * 0.05
     )
     final = round(max(0.0, min(1.0, final)) * 100, 2)
-
     return {
-        "ssim_score":       round(ssim_score * 100, 2),
-        "histogram_score":  round(hist_score * 100, 2),
-        "feature_score":    round(orb_score  * 100, 2),
-        "pixel_score":      round(pix_score  * 100, 2),
-        "landmark_score":   round(lm_score   * 100, 2),
-        "confidence":       final,
+        "ssim_score":      round(ssim_score * 100, 2),
+        "histogram_score": round(hist_score * 100, 2),
+        "feature_score":   round(orb_score  * 100, 2),
+        "pixel_score":     round(pix_score  * 100, 2),
+        "landmark_score":  round(lm_score   * 100, 2),
+        "confidence":      final,
     }
-
-
 def get_verdict(
     nid_face_found:  bool,
     live_face_found: bool,
