@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLang } from '../i18n/LangContext';
 
 function getYTId(url) {
@@ -8,7 +8,6 @@ function getYTId(url) {
 }
 
 export default function Hero({ cfg }) {
-  const canvasRef = useRef(null);
   const [wordIdx, setWordIdx] = useState(0);
   const [fading, setFading] = useState(false);
   const { lang, t } = useLang();
@@ -28,45 +27,6 @@ export default function Hero({ cfg }) {
     return () => clearInterval(id);
   }, [heroWords.length]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let raf;
-    const colors = ['#00e5ff', '#9b59ff', '#e040fb', '#00ffa3'];
-    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
-    resize();
-    window.addEventListener('resize', resize);
-    const particles = Array.from({ length: 60 }, () => ({
-      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.2 + 0.3,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      opacity: Math.random() * 0.45 + 0.08,
-    }));
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) { ctx.beginPath(); ctx.strokeStyle = particles[i].color; ctx.globalAlpha = (1 - dist / 100) * 0.06; ctx.lineWidth = 0.5; ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke(); }
-        }
-      }
-      particles.forEach(p => {
-        ctx.globalAlpha = p.opacity; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 6; ctx.fill(); ctx.shadowBlur = 0;
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-      });
-      ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
-
   return (
     <section id="hero" style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden', paddingTop: '72px' }}>
       {ytId && (
@@ -76,14 +36,14 @@ export default function Hero({ cfg }) {
               title="Hero background" frameBorder="0" allow="autoplay"
               style={{ position: 'absolute', top: '50%', left: '50%', width: '177.78vh', height: '100vh', minWidth: '100%', minHeight: '56.25vw', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
           </div>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom,var(--hero-overlay-top) 0%,var(--hero-overlay-mid) 50%,var(--hero-overlay-bot) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom,var(--hero-ot) 0%,var(--hero-om) 50%,var(--hero-ob) 100%)' }} />
         </div>
       )}
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
+
       <div style={{ position: 'absolute', top: '8%', left: '58%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle,rgba(155,89,255,0.08) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'float-orb 8s ease-in-out infinite', zIndex: 1 }} />
       <div style={{ position: 'absolute', bottom: '8%', left: '28%', width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle,rgba(0,229,255,0.06) 0%,transparent 70%)', filter: 'blur(30px)', animation: 'float-orb 11s ease-in-out infinite reverse', zIndex: 1 }} />
 
-      <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+      <div className="container" style={{ position: 'relative', zIndex: 3 }}>
         <div style={{ maxWidth: 820 }}>
           <div className="animate-in" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.28em 0.75em', borderRadius: '100px', fontFamily: 'var(--font-mono)', fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', border: '1px solid rgba(0,229,255,0.5)', background: 'rgba(0,229,255,0.12)', color: '#00e5ff', fontWeight: 600 }}>{t('hero_tag')}</span>

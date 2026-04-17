@@ -68,7 +68,7 @@ export default function Portfolio({ cfg }) {
   return (
     <section id="portfolio" className="section">
       <div className="gradient-line" />
-      <div className="container" style={{ paddingTop: 'var(--section-py)' }}>
+      <div className="container" style={{ paddingTop: 0 }}>
         <div className="section-label animate-in"><span className="label-mono">{t('portfolio_label')}</span></div>
         <h2 className="animate-in" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 300, marginBottom: '0.75rem' }}>{t('portfolio_title')}</h2>
         <p className="animate-in" style={{ color: 'var(--text-1)', maxWidth: 480, marginBottom: works.length === 0 ? '1.5rem' : '2rem', lineHeight: 1.75 }}>{t('portfolio_sub')}</p>
@@ -93,7 +93,7 @@ export default function Portfolio({ cfg }) {
         )}
 
         {filtered.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 'var(--gap-card)' }}>
+          <div className="portfolio-grid">
             {filtered.map((item, i) => {
               const thumb = getThumbnail(item);
               return (

@@ -6,7 +6,7 @@ export default function FAQ({ cfg }) {
   return (
     <section id="faq" className="section">
       <div className="gradient-line" />
-      <div className="container" style={{ paddingTop: 'var(--section-py)' }}>
+      <div className="container" style={{ paddingTop: 0 }}>
         <div className="section-label animate-in"><span className="label-mono">{t('faq_label')}</span></div>
         <h2 className="animate-in" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 300, marginBottom: '2.5rem' }}>
           {t('faq_title')}<br />{t('faq_title2')}

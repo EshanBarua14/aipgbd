@@ -3,42 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LangContext';
 import { dbGetPosts, isSupabaseReady } from '../hooks/supabase';
 
-// Sample posts shown when Supabase not connected or no posts yet
-const SAMPLE_POSTS = [
-  {
-    id: 's1',
-    slug: 'why-ai-video-is-the-future-for-bd-brands',
-    title: 'Why AI Video is the Future for Bangladeshi Brands',
-    title_bn: 'কেন এআই ভিডিও বাংলাদেশি ব্র্যান্ডের ভবিষ্যৎ',
-    excerpt: 'Traditional video production costs 50,000–1,50,000 BDT per shoot. AI changes everything — same quality, 8,000 BDT.',
-    excerpt_bn: 'প্রচলিত ভিডিও প্রোডাকশনে প্রতি শুটে ৫০,০০০–১,৫০,০০০ টাকা খরচ হয়। এআই সব বদলে দিচ্ছে।',
-    category: 'AI Production',
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-    cover_url: '',
-  },
-  {
-    id: 's2',
-    slug: 'elevenlabs-bangla-voiceover-guide',
-    title: 'Complete Guide to ElevenLabs Bangla Voiceover',
-    title_bn: 'ElevenLabs বাংলা ভয়েসওভার সম্পূর্ণ গাইড',
-    excerpt: 'How we create studio-grade Bangla narration for brands without hiring a single voice actor.',
-    excerpt_bn: 'কীভাবে আমরা একজনও ভয়েস অ্যাক্টর ছাড়াই স্টুডিও-মানের বাংলা ন্যারেশন তৈরি করি।',
-    category: 'Voiceover',
-    created_at: new Date(Date.now() - 86400000 * 7).toISOString(),
-    cover_url: '',
-  },
-  {
-    id: 's3',
-    slug: 'real-estate-ai-video-bangladesh',
-    title: 'How Real Estate Developers Cut Video Costs by 80%',
-    title_bn: 'কীভাবে রিয়েল এস্টেট ডেভেলপাররা ভিডিও খরচ ৮০% কমালেন',
-    excerpt: 'Pre-sale apartment tours from renders — no physical shoot required. Real numbers from a real project.',
-    excerpt_bn: 'রেন্ডার থেকে প্রি-সেল অ্যাপার্টমেন্ট ট্যুর — কোনো ফিজিক্যাল শুট দরকার নেই।',
-    category: 'Case Study',
-    created_at: new Date(Date.now() - 86400000 * 14).toISOString(),
-    cover_url: '',
-  },
-];
+import { SAMPLE_BLOG_POSTS } from '../data/blogPosts';
 
 function PostCard({ post, lang, t }) {
   const title   = lang === 'bn' && post.title_bn   ? post.title_bn   : post.title;
@@ -105,14 +70,27 @@ export default function BlogSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      if (isSupabaseReady) {
-        const data = await dbGetPosts(true);
-        // Use real posts if available, else fall back to samples
-        setPosts(data && data.length > 0 ? data.slice(0, 3) : SAMPLE_POSTS);
-      } else {
-        setPosts(SAMPLE_POSTS);
+    // Seed localStorage with sample posts if empty
+    try {
+      const existing = JSON.parse(localStorage.getItem('aipgbd_blog_posts') || '[]');
+      if (existing.length === 0) {
+        localStorage.setItem('aipgbd_blog_posts', JSON.stringify(SAMPLE_BLOG_POSTS));
       }
+    } catch {}
+    const load = async () => {
+      try {
+        // 1. Try Supabase
+        if (isSupabaseReady) {
+          const data = await dbGetPosts(true);
+          if (data && data.length > 0) { setPosts(data.slice(0,3)); setLoading(false); return; }
+        }
+        // 2. Try localStorage (admin-created posts)
+        const local = JSON.parse(localStorage.getItem('aipgbd_blog_posts') || '[]');
+        const pub = local.filter(p => p.published !== false);
+        if (pub.length > 0) { setPosts(pub.slice(0,3)); setLoading(false); return; }
+      } catch {}
+      // 3. Always show sample posts
+      setPosts(SAMPLE_BLOG_POSTS.slice(0,3));
       setLoading(false);
     };
     load();
@@ -121,7 +99,7 @@ export default function BlogSection() {
   return (
     <section id="blog" className="section">
       <div className="gradient-line" />
-      <div className="container" style={{ paddingTop: 'var(--section-py)' }}>
+      <div className="container" style={{ paddingTop: 'clamp(1rem,3vw,2rem)' }}>
 
         {/* Header row with "View all" link */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
@@ -161,7 +139,7 @@ export default function BlogSection() {
 
         {/* Post cards */}
         {!loading && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 'var(--gap-card)', alignItems: 'stretch' }}>
+          <div className="blog-grid">
             {posts.map(post => (
               <PostCard key={post.id} post={post} lang={lang} t={t} />
             ))}

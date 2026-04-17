@@ -19,6 +19,7 @@ export const TECH_STACK = [
   { layer: 'Visual Gen', tech: 'Gemini Ultra + Grok Video', why: 'The most stable temporal consistency engine available.' },
   { layer: 'Audio Gen', tech: 'Suno + ElevenLabs', why: 'Custom copyright-free soundscapes and voice clones for brands.' },
   { layer: 'Strategy', tech: 'Claude 4.0 Advanced', why: 'Prompt engineering for business logic and precision ad copy.' },
+  { layer: 'Database', tech: 'SQL Server / PostgreSQL', why: 'Enterprise-grade relational data with real-time query optimization.' },
 ];
 
 export const PACKAGES = [

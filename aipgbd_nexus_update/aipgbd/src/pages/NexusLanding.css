@@ -1,0 +1,335 @@
+.nexus-root {
+  position: relative;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+  cursor: none;
+}
+
+/* ── Topbar ── */
+.nexus-topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 2.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.nexus-topbar-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.nexus-topbar-links {
+  display: flex;
+  gap: 1.5rem;
+}
+.nexus-topbar-links a {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nexus-topbar-links a:hover { color: rgba(255,255,255,0.7); }
+
+/* ── Sides ── */
+.nexus-side {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: width 0.55s cubic-bezier(0.77,0,0.18,1);
+}
+.nexus-side--studios { background: #0A0806; width: 50%; }
+.nexus-side--systems { background: #020B12; width: 50%; }
+.nexus-root[data-hover="studios"] .nexus-side--studios { width: 62%; }
+.nexus-root[data-hover="studios"] .nexus-side--systems { width: 38%; }
+.nexus-root[data-hover="systems"] .nexus-side--studios { width: 38%; }
+.nexus-root[data-hover="systems"] .nexus-side--systems { width: 62%; }
+
+/* ── Studios glow ── */
+.nexus-side--studios::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 30% 50%,
+    rgba(201,168,76,0.13) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.nexus-root[data-hover="studios"] .nexus-side--studios::before { opacity: 1.6; }
+.nexus-root[data-hover="systems"] .nexus-side--studios::before { opacity: 0.4; }
+
+/* ── Systems glow ── */
+.nexus-side--systems::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 70% 50%,
+    rgba(0,229,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.nexus-root[data-hover="systems"] .nexus-side--systems::before { opacity: 1.6; }
+.nexus-root[data-hover="studios"] .nexus-side--systems::before { opacity: 0.4; }
+
+/* ── Film strips (Studios) ── */
+.film-strip {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.film-strip--left  { left: 16px; }
+.film-strip--right { right: 16px; }
+.film-hole {
+  flex-shrink: 0;
+  width: 18px;
+  height: 13px;
+  margin: 4px auto;
+  border-radius: 2px;
+  background: rgba(201,168,76,0.07);
+  border: 1px solid rgba(201,168,76,0.12);
+}
+
+/* ── Code rain (Systems) ── */
+.code-rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.code-col {
+  position: absolute;
+  top: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(0,229,255,0.18);
+  white-space: nowrap;
+  animation: rain-fall linear infinite;
+}
+@keyframes rain-fall {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(110vh); }
+}
+
+/* ── Content ── */
+.nexus-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 0 2.5rem;
+  max-width: 340px;
+  transition: opacity 0.35s, transform 0.35s;
+}
+.nexus-root[data-hover="systems"] .nexus-side--studios .nexus-content {
+  opacity: 0.4; transform: translateX(-12px);
+}
+.nexus-root[data-hover="studios"] .nexus-side--systems .nexus-content {
+  opacity: 0.4; transform: translateX(12px);
+}
+
+.nexus-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+}
+.nexus-side--studios .nexus-eyebrow { color: rgba(201,168,76,0.5); }
+.nexus-side--systems .nexus-eyebrow { color: rgba(0,229,255,0.4); }
+
+.nexus-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+.nexus-side--studios .nexus-title { color: #C9A84C; }
+.nexus-side--systems .nexus-title { color: #00e5ff; }
+
+.nexus-sub {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: rgba(240,244,255,0.45);
+  max-width: 260px;
+}
+
+.nexus-cta {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.nexus-cta:hover { transform: translateY(-2px); }
+.nexus-side--studios .nexus-cta {
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.35);
+  color: #C9A84C;
+  box-shadow: 0 0 20px rgba(201,168,76,0.1);
+}
+.nexus-side--studios .nexus-cta:hover {
+  box-shadow: 0 0 30px rgba(201,168,76,0.25);
+}
+.nexus-side--systems .nexus-cta {
+  background: rgba(0,229,255,0.07);
+  border: 1px solid rgba(0,229,255,0.3);
+  color: #00e5ff;
+  box-shadow: 0 0 20px rgba(0,229,255,0.08);
+}
+.nexus-side--systems .nexus-cta:hover {
+  box-shadow: 0 0 30px rgba(0,229,255,0.2);
+}
+
+/* ── Center logo ── */
+.nexus-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  pointer-events: none;
+  transition: left 0.55s cubic-bezier(0.77,0,0.18,1);
+}
+.nexus-root[data-hover="studios"] .nexus-center { left: 62%; }
+.nexus-root[data-hover="systems"] .nexus-center { left: 38%; }
+
+.nexus-logo-ring {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 6px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.04);
+}
+.nexus-logo-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.05em;
+}
+.nexus-logo-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+}
+
+/* ── Divider line ── */
+.nexus-divider {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(255,255,255,0.06);
+  z-index: 30;
+  pointer-events: none;
+  transition: left 0.55s cubic-bezier(0.77,0,0.18,1);
+}
+.nexus-root[data-hover="studios"] .nexus-divider { left: 62%; }
+.nexus-root[data-hover="systems"] .nexus-divider { left: 38%; }
+
+/* ── Bottom hint ── */
+.nexus-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.15);
+  white-space: nowrap;
+  animation: hint-pulse 3s ease-in-out infinite;
+}
+@keyframes hint-pulse {
+  0%,100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+/* ── Custom cursor ── */
+.nexus-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s, height 0.2s, background 0.2s;
+}
+.nexus-cursor-ring {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
+  transform: translate(-50%, -50%);
+}
+
+/* ── Flash overlay ── */
+.nexus-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  background: #fff;
+  opacity: 0;
+}
+.nexus-flash.active { animation: flash-out 0.5s ease forwards; }
+@keyframes flash-out {
+  0%   { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+/* ── Mobile stack ── */
+@media (max-width: 700px) {
+  .nexus-root { flex-direction: column; }
+  .nexus-side--studios,
+  .nexus-side--systems { width: 100% !important; height: 50%; }
+  .nexus-center { left: 50% !important; top: 50%; }
+  .nexus-divider { left: 0 !important; right: 0; top: 50%; bottom: auto; width: 100%; height: 1px; }
+  .nexus-hint { display: none; }
+}

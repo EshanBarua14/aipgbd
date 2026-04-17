@@ -3,17 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../i18n/LangContext';
 import { dbGetPost, dbIncrementPostViews, isSupabaseReady } from '../hooks/supabase';
 
-const SAMPLE_POSTS = {
-  'why-ai-video-is-the-future-for-bd-brands': {
-    slug: 'why-ai-video-is-the-future-for-bd-brands',
-    title: 'Why AI Video is the Future for Bangladeshi Brands',
-    title_bn: 'কেন এআই ভিডিও বাংলাদেশি ব্র্যান্ডের ভবিষ্যৎ',
-    category: 'AI Production', published: true,
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString(), views: 143,
-    content: '<h2>The Problem with Traditional Production</h2><p>In Bangladesh, a single professional video shoot costs between <strong>50,000 and 1,50,000 BDT</strong>. That includes crew, equipment rental, location, post-production, and the endless back-and-forth on revisions. For most SMEs, that\'s their entire monthly content budget — for one video.</p><h2>What AI Changes</h2><p>With tools like Gemini, Grok, Suno, and ElevenLabs, we can produce a 30-second cinematic brand video for <strong>8,000 BDT</strong>. Not a lower quality product — a genuinely better one. No scheduling conflicts. No equipment failures. No weather cancellations.</p><h2>The Stack That Makes It Possible</h2><p>The key insight is that each AI tool does one thing exceptionally well. Gemini creates the hyper-realistic visual anchor. Grok animates it into sustained cinematic motion. Suno composes an original score that matches the exact tempo. ElevenLabs delivers studio-grade Bangla narration.</p><p>The result is a production stack that would have cost 10× more three years ago — now available to any brand in Bangladesh.</p>',
-    content_bn: '<h2>প্রচলিত প্রোডাকশনের সমস্যা</h2><p>বাংলাদেশে একটি পেশাদার ভিডিও শুটে <strong>৫০,০০০ থেকে ১,৫০,০০০ টাকা</strong> খরচ হয়। এর মধ্যে ক্রু, সরঞ্জাম ভাড়া, লোকেশন, পোস্ট-প্রোডাকশন সব কিছু অন্তর্ভুক্ত। বেশিরভাগ ছোট ব্যবসার জন্য এটি তাদের পুরো মাসের কন্টেন্ট বাজেট — মাত্র একটি ভিডিওর জন্য।</p><h2>এআই কী বদলে দেয়</h2><p>Gemini, Grok, Suno এবং ElevenLabs এর মতো টুল ব্যবহার করে আমরা মাত্র <strong>৮,০০০ টাকায়</strong> একটি ৩০ সেকেন্ডের সিনেমাটিক ব্র্যান্ড ভিডিও তৈরি করতে পারি।</p>',
-  },
-};
+import { SAMPLE_BLOG_POSTS } from '../data/blogPosts';
+const SAMPLE_POSTS_BY_SLUG = Object.fromEntries(SAMPLE_BLOG_POSTS.map(p => [p.slug, p]));
 
 export default function BlogPostPage({ cfg }) {
   const { slug } = useParams();
@@ -30,7 +21,7 @@ export default function BlogPostPage({ cfg }) {
         data = await dbGetPost(slug);
         if (data) dbIncrementPostViews(slug);
       } else {
-        data = SAMPLE_POSTS[slug] || null;
+        data = SAMPLE_POSTS_BY_SLUG[slug] || null;
       }
       if (!data) { navigate('/blog'); return; }
       setPost(data);

@@ -5,11 +5,11 @@ export default function Industries({ cfg }) {
   return (
     <section id="industries" className="section">
       <div className="gradient-line" />
-      <div className="container" style={{ paddingTop: 'var(--section-py)' }}>
+      <div className="container" style={{ paddingTop: 0 }}>
         <div className="section-label animate-in"><span className="label-mono">{t('industries_label')}</span></div>
         <h2 className="animate-in" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 300, marginBottom: '0.75rem' }}>{t('industries_title')}</h2>
         <p className="animate-in" style={{ color: 'var(--text-1)', maxWidth: 480, marginBottom: '2.5rem', lineHeight: 1.75 }}>{t('industries_sub')}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 'var(--gap-card)' }}>
+        <div className="industries-grid">
           {cfg.niches.map((n, i) => {
             const title = lang === 'bn' && n.title_bn ? n.title_bn : n.title;
             const pain  = lang === 'bn' && n.pain_bn  ? n.pain_bn  : n.pain;

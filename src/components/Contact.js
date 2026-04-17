@@ -58,7 +58,7 @@ export default function Contact({ cfg, showToast }) {
   return (
     <section id="contact" className="section">
       <div className="gradient-line"/>
-      <div className="container" style={{paddingTop:'var(--section-py)'}}>
+      <div className="container" style={{paddingTop:0}}>
         <div className="contact-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'clamp(2rem,5vw,5rem)',alignItems:'start'}}>
           <div>
             <div className="section-label animate-in"><span className="label-mono">{t('contact_label')}</span></div>
@@ -88,11 +88,11 @@ export default function Contact({ cfg, showToast }) {
           </div>
           <div className="card animate-in" style={{padding:'clamp(1.5rem,3vw,2.25rem)'}}>
             <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+              <div className="form-row-2">
                 {F('name',t('contact_name'),'text',{placeholder:t('contact_ph_name')})}
                 {F('company',t('contact_company'),'text',{placeholder:t('contact_ph_co')})}
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+              <div className="form-row-2">
                 {F('phone',t('contact_phone'),'tel',{placeholder:t('contact_ph_ph')})}
                 {F('email',t('contact_email'),'email',{placeholder:t('contact_ph_em')})}
               </div>

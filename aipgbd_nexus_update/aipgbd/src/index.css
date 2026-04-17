@@ -1,0 +1,89 @@
+:root {
+  --gold: #C9A84C;
+  --gold-light: #E8C97A;
+  --gold-dim: #7A6130;
+  --gold-bg: rgba(201,168,76,0.06);
+  --bg: #080808;
+  --bg-1: #0F0F0F;
+  --bg-2: #141414;
+  --bg-3: #1A1A1A;
+  --text: #F0EDE6;
+  --text-muted: #6A6660;
+  --text-mid: #A8A39B;
+  --border: rgba(201,168,76,0.15);
+  --border-dim: rgba(255,255,255,0.06);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.7;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+img { max-width: 100%; display: block; }
+.container { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 2.5rem; }
+.section-pad { padding: 7rem 0; }
+.section-label {
+  font-size: 0.63rem; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: 0.8rem;
+}
+.section-label::after { content: ''; width: 28px; height: 1px; background: var(--gold-dim); }
+.section-title {
+  font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.6rem);
+  font-weight: 700; line-height: 1.05; letter-spacing: -0.025em;
+}
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* Cursor */
+.cursor { position: fixed; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); }
+.cursor-ring { position: fixed; width: 32px; height: 32px; border: 1px solid rgba(201,168,76,0.35); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: width .15s, height .15s; }
+
+/* Buttons */
+.btn-primary {
+  font-family: var(--font-display); font-size: 0.76rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--bg); background: var(--gold); border: none;
+  padding: 0.9rem 2.2rem; cursor: pointer;
+  transition: background 0.25s, transform 0.2s; display: inline-block;
+}
+.btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); }
+.btn-ghost {
+  background: none; border: 1px solid var(--border-dim); cursor: pointer;
+  font-size: 0.76rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.5rem;
+  transition: all 0.25s; padding: 0.9rem 1.8rem;
+}
+.btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.5); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes fill30 { from { width: 5%; } to { width: 100%; } }
+@keyframes wave { 0%,100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+@keyframes scan { 0% { top: -2px; } 100% { top: 100%; } }
+
+@media (max-width: 768px) {
+  .cursor, .cursor-ring { display: none; }
+  .container { padding: 0 1.25rem; }
+  .section-pad { padding: 4.5rem 0; }
+}

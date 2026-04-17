@@ -6,12 +6,12 @@ export default function Testimonials({ cfg }) {
   return (
     <section id="testimonials" className="section">
       <div className="gradient-line" />
-      <div className="container" style={{ paddingTop: 'var(--section-py)' }}>
+      <div className="container" style={{ paddingTop: 0 }}>
         <div className="section-label animate-in"><span className="label-mono">{t('testimonials_label')}</span></div>
         <h2 className="animate-in" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 300, marginBottom: '2.5rem' }}>
           {t('testimonials_title')}<br />{t('testimonials_title2')}
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 'var(--gap-card)' }}>
+        <div className="testi-grid">
           {testimonials.map((te, i) => {
             const quote  = lang === 'bn' && te.quote_bn  ? te.quote_bn  : te.quote;
             const result = lang === 'bn' && te.result_bn ? te.result_bn : te.result;

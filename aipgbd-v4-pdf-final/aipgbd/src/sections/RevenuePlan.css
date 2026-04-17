@@ -1,0 +1,42 @@
+.rev { background: var(--bg); border-top: 1px solid var(--border-dim); }
+.rev__sub { color: var(--text-mid); font-size: 0.95rem; font-weight: 300; max-width: 480px; margin-top: 0.8rem; }
+
+.rev__grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border-dim);
+  margin-top: 3.5rem; border: 1px solid var(--border-dim);
+  position: relative;
+}
+.rev__card {
+  position: relative; padding: 2.4rem 2rem; background: var(--bg); overflow: hidden;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out), background 0.25s;
+}
+.rev__card--in { opacity: 1; transform: translateY(0); }
+.rev__card:hover { background: var(--bg-1); }
+.rev__card-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.rev__phase { font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.25rem; }
+.rev__timeline { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1.2rem; }
+.rev__market { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; margin-bottom: 0.7rem; line-height: 1.2; }
+.rev__action { font-size: 0.82rem; color: var(--text-mid); line-height: 1.8; margin-bottom: 1.5rem; flex: 1; }
+.rev__metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding-top: 1.2rem; border-top: 1px solid var(--border-dim); }
+.rev__metric-label { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem; }
+.rev__metric-val { font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; }
+
+.rev__connector { display: none; }
+
+.rev__summary {
+  display: flex; align-items: center; gap: 0; margin-top: 1.5rem;
+  border: 1px solid var(--border-dim); background: var(--bg-1);
+  flex-wrap: wrap;
+}
+.rev__summary-item { flex: 1; padding: 1rem 1.5rem; min-width: 140px; }
+.rev__summary-label { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.3rem; }
+.rev__summary-val { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.rev__summary-sep { width: 1px; background: var(--border-dim); align-self: stretch; }
+
+@media (max-width: 768px) {
+  .rev__grid { grid-template-columns: 1fr; }
+  .rev__summary { flex-direction: column; }
+  .rev__summary-sep { width: 100%; height: 1px; }
+}

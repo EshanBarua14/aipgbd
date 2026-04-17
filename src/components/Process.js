@@ -7,7 +7,7 @@ export default function Process({ cfg }) {
   return (
     <section id="process" className="section">
       <div className="gradient-line" />
-      <div className="container" style={{ paddingTop: 'var(--section-py)' }}>
+      <div className="container" style={{ paddingTop: 0 }}>
         <div className="section-label animate-in"><span className="label-mono">{t('process_label')}</span></div>
         <h2 className="animate-in" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,4rem)', fontWeight: 300, marginBottom: '0.75rem' }}>
           {t('process_title')}<br />{t('process_title2')}

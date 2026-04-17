@@ -135,7 +135,6 @@ export default function Chatbot({ cfg }) {
     ? (chatConfig.greeting_bn || `হ্যালো! আমি ${botName}। আমি AIPGBD-এর সেবা, মূল্য এবং প্রক্রিয়া সম্পর্কে সাহায্য করতে পারি। কী জানতে চান?`)
     : (chatConfig.greeting || `Hi! I'm ${botName}. I can help you with AIPGBD's services, pricing, and process. What would you like to know?`);
 
-  // Open with greeting
   const handleOpen = () => {
     setOpen(true);
     setUnread(0);
@@ -149,17 +148,14 @@ export default function Chatbot({ cfg }) {
     }
   };
 
-  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Auto-focus input when opened
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
-  // Show unread badge after 8s if not opened
   useEffect(() => {
     const t = setTimeout(() => { if (!open) setUnread(1); }, 8000);
     return () => clearTimeout(t);
@@ -186,7 +182,6 @@ export default function Chatbot({ cfg }) {
     setInput('');
     setLoading(true);
 
-    // Check if user wants to get started / book
     const bookKeywords = ['book', 'start', 'get started', 'consultation', 'contact', 'শুরু', 'বুক', 'যোগাযোগ', 'প্রজেক্ট'];
     if (bookKeywords.some(k => text.toLowerCase().includes(k))) {
       setTimeout(() => {
@@ -203,22 +198,29 @@ export default function Chatbot({ cfg }) {
     }
 
     try {
-      const history = newMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: buildSystemPrompt(),
-          messages: history,
-        }),
-      });
-      const data = await res.json();
-      const reply = data.content?.[0]?.text || (lang === 'bn' ? 'দুঃখিত, উত্তর দিতে পারছি না।' : 'Sorry, I could not get a response.');
-      const botMsg = { id: Date.now() + 1, role: 'assistant', content: reply };
+      // Build Gemini-format conversation history
+      const history = newMessages.slice(-8).map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }));
 
-      // Add WhatsApp action if reply mentions getting started
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.REACT_APP_GEMINI_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: buildSystemPrompt() }] },
+            contents: history,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text
+        || (lang === 'bn' ? 'দুঃখিত, উত্তর দিতে পারছি না।' : 'Sorry, I could not get a response.');
+
+      const botMsg = { id: Date.now() + 1, role: 'assistant', content: reply };
       if (reply.toLowerCase().includes('whatsapp') || reply.toLowerCase().includes('contact')) {
         botMsg.actions = [{ label: '📱 Open WhatsApp', href: cfg.site?.whatsapp || '#' }];
       }
@@ -309,7 +311,6 @@ export default function Chatbot({ cfg }) {
           {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column' }}>
             {messages.map(msg => <Message key={msg.id} msg={msg} />)}
-
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,var(--cyan),var(--purple))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', flexShrink: 0 }}>🤖</div>
