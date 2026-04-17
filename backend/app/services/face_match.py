@@ -16,6 +16,59 @@ import cv2
 from app.core.config import settings
 
 
+def landmark_similarity(face1_rgb, face2_rgb) -> float:
+    """
+    Compare faces using MediaPipe face mesh landmark ratios.
+    Robust to lighting, color, and quality differences between NID and selfie.
+    """
+    try:
+        import mediapipe as mp
+        mp_face_mesh = mp.solutions.face_mesh
+        # Key landmark indices for facial geometry
+        LANDMARKS = [33, 263, 1, 61, 291, 199, 94, 0, 17, 78, 308, 13, 14]
+        def get_ratios(img_rgb):
+            with mp_face_mesh.FaceMesh(
+                static_image_mode=True,
+                max_num_faces=1,
+                refine_landmarks=True,
+                min_detection_confidence=0.3,
+            ) as mesh:
+                result = mesh.process(img_rgb)
+                if not result.multi_face_landmarks:
+                    return None
+                lms = result.multi_face_landmarks[0].landmark
+                pts = [(lms[i].x, lms[i].y) for i in LANDMARKS if i < len(lms)]
+                if len(pts) < 4:
+                    return None
+                # Compute pairwise distance ratios (scale invariant)
+                import numpy as np
+                pts = np.array(pts)
+                # Normalize by face width
+                face_w = pts[:,0].max() - pts[:,0].min()
+                face_h = pts[:,1].max() - pts[:,1].min()
+                if face_w < 0.01 or face_h < 0.01:
+                    return None
+                ratios = []
+                for i in range(len(pts)-1):
+                    d = np.linalg.norm(pts[i] - pts[i+1])
+                    ratios.append(d / face_w)
+                return np.array(ratios)
+
+        r1 = get_ratios(face1_rgb)
+        r2 = get_ratios(face2_rgb)
+        if r1 is None or r2 is None:
+            return 0.0
+        import numpy as np
+        # Cosine similarity between ratio vectors
+        dot   = np.dot(r1, r2)
+        norm  = np.linalg.norm(r1) * np.linalg.norm(r2)
+        if norm < 1e-8:
+            return 0.0
+        cos_sim = dot / norm
+        return float(max(0.0, cos_sim))
+    except Exception:
+        return 0.0
+
 def preprocess_face(face_rgb: np.ndarray, size=(160, 160)) -> np.ndarray:
     """
     Normalize face for NID-aware comparison:
@@ -127,11 +180,12 @@ def compare_faces(face1_rgb: np.ndarray, face2_rgb: np.ndarray) -> dict:
     final = round(max(0.0, min(1.0, final)) * 100, 2)
 
     return {
-        "ssim_score":      round(ssim_score  * 100, 2),
-        "histogram_score": round(hist_score  * 100, 2),
-        "feature_score":   round(orb_score   * 100, 2),
-        "pixel_score":     round(pix_score   * 100, 2),
-        "confidence":      final,
+        "ssim_score":       round(ssim_score * 100, 2),
+        "histogram_score":  round(hist_score * 100, 2),
+        "feature_score":    round(orb_score  * 100, 2),
+        "pixel_score":      round(pix_score  * 100, 2),
+        "landmark_score":   round(lm_score   * 100, 2),
+        "confidence":       final,
     }
 
 
