@@ -314,3 +314,33 @@ BFIU: Circular No. 29 compliant
 - Fallback threshold = 3 failed sessions -> face matching offered (BFIU Section 3.2)
 - Step 5 auto-generates notification on completion
 - Old test_fingerprint.py (urllib, required live server) replaced with TestClient tests
+
+---
+## M9 - Sanctions and Screening Engine
+**Date:** 2026-04-17
+**Status:** COMPLETE
+**Tests:** 46/46 PASSED
+
+### Files Created
+- backend/app/services/screening_service.py (UNSCR, PEP, adverse media, exit list, full screening, fuzzy matching)
+- backend/app/api/v1/routes/screening.py (/unscr, /pep, /adverse-media, /exit-list/add, /exit-list/check, /full, /thresholds)
+- backend/app/api/v1/router.py (updated - screening router added)
+- backend/tests/test_m9_screening.py (46 tests)
+
+### Test Coverage (46 tests)
+- TestFuzzyMatching (8): normalize, exact=1.0, no overlap=0, partial between, single char diff, different low, alias match
+- TestUNSCRScreening (8): clear name, exact blocked, alias flagged, list version, screened_at, bfiu ref, not blocking, match blocking
+- TestPEPScreening (5): clear name, PEP matched, EDD triggered, role present, bfiu ref
+- TestAdverseMedia (5): clean clear, flagged detected, EDD triggered, hit count, bfiu ref
+- TestExitList (5): add entry, screen after add, different institution clear, empty clear, blocking
+- TestFullScreening (6): simplified clear, simplified 2 checks only, regular 4 checks, sanctioned blocked, bfiu ref, edd required
+- TestScreeningAPI (9): UNSCR clear, UNSCR blocked, PEP skipped simplified, PEP runs regular, exit list add+check, full simplified, full regular, thresholds, unauth 403
+
+### Design Decisions
+- Local UNSCR list (daily-refreshed in prod) - never blocked by network outages
+- Fuzzy matching = max(token overlap, edit distance) - handles BD name transliterations
+- UNSCR exact match (1.0) -> BLOCKED immediately, fuzzy (>=0.85) -> REVIEW
+- PEP screening skipped for SIMPLIFIED eKYC (per BFIU Section 5.1)
+- Exit lists per-institution - inst-A cannot see inst-B exit list
+- Full screening auto-selects checks based on kyc_type
+- REVIEW and BLOCKED both set edd_required=True
