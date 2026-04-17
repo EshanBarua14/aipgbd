@@ -284,3 +284,33 @@ BFIU: Circular No. 29 compliant
 - Review frequency: HIGH=1yr, MEDIUM=2yr, LOW=5yr (BFIU Section 5.7)
 - Annexure-1 profession/business lookup tables built-in, DB-backed in prod
 - Rescore function supports M10 Lifecycle Manager periodic review trigger
+
+---
+## M4 - Fingerprint Onboarding Wizard
+**Date:** 2026-04-17
+**Status:** COMPLETE
+**Tests:** 33/33 PASSED
+
+### Files Created
+- backend/app/services/onboarding_wizard.py (5-step state machine, fallback trigger, notification)
+- backend/app/api/v1/routes/onboarding.py (/start, /step, /fail, /session/{id}, /steps)
+- backend/app/api/v1/router.py (updated - onboarding router added)
+- backend/tests/test_m4_onboarding.py (33 tests - replaces old urllib-based test_fingerprint.py)
+
+### Test Coverage (33 tests)
+- TestWizardSession (7): step 1 start, UUID, IN_PROGRESS, retrieve by id, unknown=None, 5 steps, step names
+- TestStepProcessing (9): step1->2, missing NID fails, missing fingerprint fails, step2->3,
+                           step3->4, PIN low-risk ok, PIN high-risk rejected, full 5-step flow, completed rejects
+- TestFallbackTrigger (6): threshold=3, 1st fail no fallback, 2nd fail no fallback,
+                            3rd fail triggers, message has face matching, BFIU ref 3.2
+- TestNotification (3): has ID, type=ACCOUNT_OPENING, status=DISPATCHED
+- TestOnboardingAPI (8): start session, invalid NID 422, submit step1, fail session,
+                          fallback after 3 fails, get session, get steps, unauth 403
+
+### Design Decisions
+- Server-side state machine - session can resume if interrupted (BFIU requirement)
+- NID number never exposed in GET /session response (data minimization)
+- PIN signature only allowed for LOW risk (HIGH risk requires WET/ELECTRONIC/DIGITAL)
+- Fallback threshold = 3 failed sessions -> face matching offered (BFIU Section 3.2)
+- Step 5 auto-generates notification on completion
+- Old test_fingerprint.py (urllib, required live server) replaced with TestClient tests
