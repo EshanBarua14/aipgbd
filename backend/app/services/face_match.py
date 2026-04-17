@@ -119,9 +119,9 @@ def compare_faces(face1_rgb: np.ndarray, face2_rgb: np.ndarray) -> dict:
 
     # Weighted final
     final = (
-        ssim_score  * 0.35 +
-        hist_score  * 0.30 +
-        orb_score   * 0.25 +
+        ssim_score  * 0.20 +
+        hist_score  * 0.35 +
+        orb_score   * 0.35 +
         pix_score   * 0.10
     )
     final = round(max(0.0, min(1.0, final)) * 100, 2)
