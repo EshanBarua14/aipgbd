@@ -6,3 +6,7 @@ pillow==11.2.1
 numpy==1.26.4
 mediapipe==0.10.21
 pytest==8.3.5
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.9
+alembic==1.13.1
+python-dotenv==1.0.1
