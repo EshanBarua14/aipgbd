@@ -8,7 +8,7 @@ import cv2
 import os
 from app.services.image_utils import b64_to_numpy
 
-CONSECUTIVE_PASSES  = 2
+CONSECUTIVE_PASSES  = 1
 LBP_SPOOF_THRESHOLD = 12.0
 _consecutive: dict  = {}
 
@@ -63,10 +63,12 @@ def analyze_face(img_rgb: np.ndarray) -> dict:
     result["yaw_deg"]   = round(yaw, 1)
     result["pitch_deg"] = round(pitch, 1)
 
-    if   yaw < -15:   result["head_direction"] = "left"
-    elif yaw >  15:   result["head_direction"] = "right"
-    elif pitch < -15: result["head_direction"] = "up"
-    elif pitch >  15: result["head_direction"] = "down"
+    # Webcam is mirrored: face moving right in frame = user turned LEFT
+    # Lower threshold to 10 degrees for better sensitivity
+    if   yaw >  10:   result["head_direction"] = "left"
+    elif yaw < -10:   result["head_direction"] = "right"
+    elif pitch < -10: result["head_direction"] = "up"
+    elif pitch >  10: result["head_direction"] = "down"
     else:             result["head_direction"] = "center"
 
     # Blink via eye sub-cascade
