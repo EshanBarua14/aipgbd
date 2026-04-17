@@ -31,3 +31,8 @@ Thumbs.db
 test_img.jpg
 .vs/
 backend/nul
+
+# RS256 keys
+backend/keys/
+keys/
+*.pem

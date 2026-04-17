@@ -189,3 +189,33 @@ BFIU: Circular No. 29 compliant
 - SQLite fallback preserved for local dev (existing M5/M6/M7 modules unaffected)
 - All secrets via .env, never hardcoded
 - BFIU Section 3.2 limits enforced in config: 10 attempts/session, 2 sessions/day
+
+---
+## M2 - Auth and User Management
+**Date:** 2026-04-17
+**Status:** COMPLETE
+**Tests:** 42/42 PASSED
+
+### Files Created
+- backend/app/core/security.py (RS256 keypair, JWT, Role enum, RBAC, IP whitelist)
+- backend/app/db/models/auth.py (Institution, User, UserSession, AgentProfile)
+- backend/app/db/models/__init__.py (unified export)
+- backend/app/db/models_legacy.py (KYCProfile preserved from M6)
+- backend/app/services/auth_service.py (Argon2id, TOTP, OTP, sessions)
+- backend/app/api/v1/routes/auth.py (register, token, refresh, logout, me, totp)
+- backend/requirements.txt (python-jose, argon2-cffi, pyotp, cryptography, httpx)
+
+### Test Coverage (42 tests)
+- TestPasswordHashing (5): Argon2id hash, verify, wrong fails, unique salts
+- TestJWT (7): RS256, decode, jti, type, tenant schema, invalid raises
+- TestTOTP (5): base32 secret, URI, valid code, invalid code, 6-digit OTP
+- TestRBAC (11): all 5 roles, IP whitelist allow/block
+- TestSession (4): register, revoke, expired, unknown jti
+- TestAuthAPI (10): register, duplicate 409, login, wrong pw, me, logout, refresh, bad role 422, admin roles, non-admin 403
+
+### Design Decisions
+- RS256 asymmetric JWT - public key shareable with microservices
+- Argon2id password hashing - PHC winner, GPU resistant
+- Access TTL 15min, Refresh TTL 7 days
+- TOTP RFC 6238 compatible with Google Authenticator
+- IP whitelist per institution, empty = allow all
