@@ -219,3 +219,35 @@ BFIU: Circular No. 29 compliant
 - Access TTL 15min, Refresh TTL 7 days
 - TOTP RFC 6238 compatible with Google Authenticator
 - IP whitelist per institution, empty = allow all
+
+---
+## M3 - NID Integration Layer
+**Date:** 2026-04-17
+**Status:** COMPLETE
+**Tests:** 40/40 PASSED
+
+### Files Created
+- backend/app/services/session_limiter.py (BFIU attempt/session limiter, HMAC-SHA256 NID hashing)
+- backend/app/services/nid_ocr_service.py (Tesseract OCR, BD NID field extraction, mock fallback)
+- backend/app/services/nid_api_client.py (EC NID API client, demo DB, cross-match)
+- backend/app/api/v1/routes/nid.py (/nid/scan, /nid/verify, /nid/session-status)
+- backend/app/api/v1/router.py (updated - nid router added)
+- backend/tests/test_m3_nid.py (40 tests)
+- backend/requirements.txt (added pytesseract)
+
+### Test Coverage (40 tests)
+- TestNIDValidation (7): 10/13/17 digit formats, invalid, spaces/dashes stripped
+- TestNIDOCR (7): scan success, fields present, invalid b64, mock mode, decode valid/invalid
+- TestNIDAPIClient (9): known NID found, name present, unknown not found, cross-match, fuzzy match
+- TestSessionLimiter (10): hash hex, same hash, different hash, gate allowed, attempt limit,
+                           session limit, reset, gate reason, BFIU 10 attempts, BFIU 2 sessions
+- TestNIDAPI (7): scan success, invalid image 400, verify known, invalid format 422,
+                  unknown 404, session status, unauthenticated 403
+
+### Design Decisions
+- NID never stored in plaintext - HMAC-SHA256 with institution secret
+- Tesseract unavailable on Windows dev - mock fallback returns realistic BD NID data
+- EC NID API in DEMO mode - 3 realistic BD NID records in memory
+- BFIU limits enforced atomically before DB write (Redis in prod, in-memory in dev)
+- Session gate checks both daily session limit AND per-session attempt limit
+- Cross-match uses token overlap fuzzy matching for OCR noise tolerance
