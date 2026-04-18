@@ -1,4 +1,5 @@
 import { TabVideos, TabNexus, TabStudiosContent, TabSystemsContent } from './DivisionAdminTabs';
+import SocialCommandCenter from './SocialCommandCenter';
 import { useState, useEffect } from 'react';
 import {
   getInquiries, updateInquiryStatus, deleteInquiry, addInquiryNote, getStats,
@@ -835,7 +836,11 @@ export default function AdminPanel({ cfg, onClose, onSave, onReset, showToast })
     {id:'faq',        label:'❓ FAQ'},
     {id:'chatbot',    label:'🤖 Chatbot'},
     {id:'blog',       label:'✍ Blog'},
-    {id:'chatbot',    label:'🤖 Chatbot'},
+    {id:'social',     label:'📡 Social Hub'},
+    {id:'videos',     label:'🎬 BG Videos'},
+    {id:'nexus',      label:'⚡ Nexus Page'},
+    {id:'studios-content', label:'◈ Studios'},
+    {id:'systems-content', label:'</> Systems'},
   ];
 
   return (
@@ -873,7 +878,11 @@ export default function AdminPanel({ cfg, onClose, onSave, onReset, showToast })
               {tab==='faq'         && <TabFAQ         cfg={cfg} onSave={onSave}/>}
               {tab==='chatbot'     && <TabChatbot     cfg={cfg} onSave={onSave}/>}
               {tab==='blog'        && <TabBlog        cfg={cfg} onSave={onSave} showToast={showToast}/>}
-              {tab==='chatbot'     && <TabChatbot    cfg={cfg} onSave={onSave}/>}
+              {tab==='social'      && <SocialCommandCenter divisionId={1}/>}
+              {tab==='videos'      && <TabVideos          cfg={cfg} onSave={onSave}/>}
+              {tab==='nexus'       && <TabNexus           cfg={cfg} onSave={onSave}/>}
+              {tab==='studios-content' && <TabStudiosContent cfg={cfg} onSave={onSave}/>}
+              {tab==='systems-content' && <TabSystemsContent cfg={cfg} onSave={onSave}/>}
             </div>
           </>
         )}
