@@ -24,3 +24,10 @@ yarn-error.log*
 
 # React
 .eslintcache
+*.mp4
+*.zip
+patch-*.sh
+systems_update/
+studios_update/
+node_modules/
+build/
