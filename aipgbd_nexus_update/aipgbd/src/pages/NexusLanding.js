@@ -1,7 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../i18n/DivisionContext';
+import { getConfig } from '../hooks/db';
 import './NexusLanding.css';
+
+// YouTube iframe background
+function YTBackground({ videoId, opacity = 0.35 }) {
+  if (!videoId) return null;
+  // Use nocookie + autoplay + mute + loop + controls=0
+  const src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 0,
+      overflow: 'hidden', pointerEvents: 'none',
+    }}>
+      <iframe
+        src={src}
+        title="bg"
+        frameBorder="0"
+        allow="autoplay; encrypted-media"
+        style={{
+          position: 'absolute',
+          top: '50%', left: '50%',
+          width: '177.78vh', minWidth: '100%',
+          height: '56.25vw', minHeight: '100%',
+          transform: 'translate(-50%,-50%)',
+          opacity,
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Dark overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} />
+    </div>
+  );
+}
 
 // Film strip for Studios side
 function FilmStrip({ side }) {
@@ -14,7 +46,7 @@ function FilmStrip({ side }) {
 }
 
 // Code rain for Systems side
-const CODE_CHARS = '01アイウエオカキクケコサシスセソタチツテトナニヌネノ{}[]<>/\\|=+-*&^%$#@!';
+const CODE_CHARS = '01アイウエオカキクケコ{}[]<>/\\=+-*&^%$#@!';
 function CodeRain() {
   const cols = Array.from({ length: 18 }, (_, i) => i);
   return (
@@ -31,7 +63,7 @@ function CodeRain() {
               left: `${(i / 18) * 100}%`,
               animationDuration: `${6 + Math.random() * 8}s`,
               animationDelay: `${-Math.random() * 10}s`,
-              opacity: 0.3 + Math.random() * 0.5,
+              opacity: 0.3 + Math.random() * 0.4,
             }}
           >
             {chars}
@@ -43,30 +75,34 @@ function CodeRain() {
 }
 
 export default function NexusLanding() {
-  const [hover, setHover] = useState(null); // 'studios' | 'systems' | null
-  const navigate = useNavigate();
-  const { setDivision } = useDivision();
-  const flashRef = useRef(null);
-  const cursorRef = useRef(null);
-  const ringRef = useRef(null);
-  const ringPos = useRef({ x: 0, y: 0 });
-  const mousePos = useRef({ x: 0, y: 0 });
-  const rafRef = useRef(null);
+  const [hover, setHover]   = useState(null);
+  const navigate            = useNavigate();
+  const { setDivision }     = useDivision();
+  const flashRef            = useRef(null);
+  const cursorRef           = useRef(null);
+  const ringRef             = useRef(null);
+  const ringPos             = useRef({ x: 0, y: 0 });
+  const mousePos            = useRef({ x: 0, y: 0 });
+  const rafRef              = useRef(null);
 
-  // Reset division on nexus page
+  const cfg    = getConfig();
+  const videos = cfg.videos || {};
+  const nexus  = cfg.nexus  || {};
+
   useEffect(() => {
     setDivision(null);
     document.body.style.cursor = 'none';
+    document.title = `${cfg.site?.name || 'AIPG'} — AI Playground BD`;
     return () => { document.body.style.cursor = ''; };
-  }, [setDivision]);
+  }, [setDivision, cfg.site]);
 
-  // Custom cursor animation
+  // Custom cursor
   useEffect(() => {
     const onMove = (e) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
       if (cursorRef.current) {
         cursorRef.current.style.left = e.clientX + 'px';
-        cursorRef.current.style.top = e.clientY + 'px';
+        cursorRef.current.style.top  = e.clientY + 'px';
       }
     };
     const animate = () => {
@@ -74,35 +110,31 @@ export default function NexusLanding() {
       ringPos.current.y += (mousePos.current.y - ringPos.current.y) * 0.1;
       if (ringRef.current) {
         ringRef.current.style.left = ringPos.current.x + 'px';
-        ringRef.current.style.top = ringPos.current.y + 'px';
+        ringRef.current.style.top  = ringPos.current.y + 'px';
       }
       rafRef.current = requestAnimationFrame(animate);
     };
     window.addEventListener('mousemove', onMove);
     rafRef.current = requestAnimationFrame(animate);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      cancelAnimationFrame(rafRef.current);
-    };
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(rafRef.current); };
   }, []);
 
   const handleClick = (dest) => {
-    if (flashRef.current) {
-      flashRef.current.classList.add('active');
-    }
+    if (flashRef.current) flashRef.current.classList.add('active');
     setDivision(dest);
-    setTimeout(() => navigate('/' + dest), 340);
+    setTimeout(() => navigate('/' + dest), 320);
   };
 
   return (
     <>
-      <div
-        className="nexus-root"
-        data-hover={hover || undefined}
-      >
+      <div className="nexus-root" data-hover={hover || undefined}>
+
+        {/* Global YouTube BG */}
+        <YTBackground videoId={videos.nexusBgYoutubeId} opacity={videos.nexusBgOpacity || 0.35} />
+
         {/* Topbar */}
         <nav className="nexus-topbar">
-          <span className="nexus-topbar-logo">AI Playground BD</span>
+          <span className="nexus-topbar-logo">{nexus.centerLogoSub || 'AI Playground BD'}</span>
           <div className="nexus-topbar-links">
             <a href="#about">About</a>
             <a href="#work">Work</a>
@@ -119,16 +151,11 @@ export default function NexusLanding() {
         >
           <FilmStrip side="left" />
           <FilmStrip side="right" />
-
           <div className="nexus-content">
-            <span className="nexus-eyebrow">Division I</span>
-            <h2 className="nexus-title">Cinematic AI<br />Production</h2>
-            <p className="nexus-sub">
-              High-fidelity AI video production. From concept to final render — cinematic, precise, and unforgettable.
-            </p>
-            <button className="nexus-cta">
-              Enter Studios →
-            </button>
+            <span className="nexus-eyebrow">{nexus.studiosEyebrow || 'Division I'}</span>
+            <h2 className="nexus-title">{nexus.studiosLabel || 'Cinematic AI Production'}</h2>
+            <p className="nexus-sub">{nexus.studiosSub || 'High-fidelity AI video production. From concept to final render.'}</p>
+            <button className="nexus-cta">{nexus.studiosBtn || 'Enter Studios'} →</button>
           </div>
         </div>
 
@@ -140,32 +167,27 @@ export default function NexusLanding() {
           onClick={() => handleClick('systems')}
         >
           <CodeRain />
-
           <div className="nexus-content">
-            <span className="nexus-eyebrow">Division II</span>
-            <h2 className="nexus-title">Enterprise<br />Software</h2>
-            <p className="nexus-sub">
-              Production-grade React &amp; ASP.NET solutions. Architected for scale, built to last.
-            </p>
-            <button className="nexus-cta">
-              Enter Systems →
-            </button>
+            <span className="nexus-eyebrow">{nexus.systemsEyebrow || 'Division II'}</span>
+            <h2 className="nexus-title">{nexus.systemsLabel || 'Enterprise Software'}</h2>
+            <p className="nexus-sub">{nexus.systemsSub || 'Production-grade React & ASP.NET solutions.'}</p>
+            <button className="nexus-cta">{nexus.systemsBtn || 'Enter Systems'} →</button>
           </div>
         </div>
 
         {/* Divider */}
         <div className="nexus-divider" />
 
-        {/* Floating Center Logo */}
+        {/* Center Logo */}
         <div className="nexus-center">
           <div className="nexus-logo-ring">
-            <span className="nexus-logo-text">AIPG</span>
+            <span className="nexus-logo-text">{nexus.centerLogoText || 'AIPG'}</span>
           </div>
-          <span className="nexus-logo-sub">AI Playground BD</span>
+          <span className="nexus-logo-sub">{nexus.centerLogoSub || 'AI Playground BD'}</span>
         </div>
 
-        {/* Bottom hint */}
-        <div className="nexus-hint">Hover to explore · Click to enter</div>
+        {/* Hint */}
+        <div className="nexus-hint">{nexus.hint || 'Hover to explore · Click to enter'}</div>
       </div>
 
       {/* Flash overlay */}

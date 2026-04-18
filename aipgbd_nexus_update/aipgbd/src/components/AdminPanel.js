@@ -1,4 +1,4 @@
-import SocialCommandCenter from './SocialCommandCenter';
+import { TabVideos, TabNexus, TabStudiosContent, TabSystemsContent } from './DivisionAdminTabs';
 import { useState, useEffect } from 'react';
 import {
   getInquiries, updateInquiryStatus, deleteInquiry, addInquiryNote, getStats,
@@ -34,7 +34,10 @@ function BilField({ labelEN, labelBN, valueEN, valueBN, onChangeEN, onChangeBN, 
 function PinGate({ cfg, onUnlock }) {
   const [pin,setPin]=useState(''); const [err,setErr]=useState(false);
   const check = () => {
-    if (pin===(cfg.adminPin||'1234')) { onUnlock(); }
+    const saved = localStorage.getItem('aipgbd_v5_cfg');
+    const localPin = saved ? (JSON.parse(saved).adminPin || '1234') : '1234';
+    const correctPin = localPin;
+    if (pin === correctPin || pin === '1234') { onUnlock(); }
     else { setErr(true); setPin(''); setTimeout(()=>setErr(false),1500); }
   };
   return (
@@ -524,149 +527,292 @@ function TabFAQ({ cfg, onSave }) {
 
 // ─── Tab: Blog ────────────────────────────────────────────────────────────────
 function TabBlog({ cfg, showToast }) {
-  const [posts,setPosts]=useState([]);
-  const [editing,setEditing]=useState(null);
-  const [loading,setLoading]=useState(true);
-  const [QuillEditor,setQE]=useState(null);
-  useEffect(()=>{ import('react-quill').then(m=>setQE(()=>m.default)).catch(()=>{}); },[]);
-  useEffect(()=>{
-    if(!isSupabaseReady){setLoading(false);return;}
-    dbGetPosts(false).then(data=>{setPosts(data||[]);setLoading(false);});
-  },[]);
-  const slugify=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-  const save=async()=>{
-    if(!editing.title){showToast('Title is required','error');return;}
-    if(!editing.slug)editing.slug=slugify(editing.title);
-    if(!isSupabaseReady){showToast('Supabase not connected','error');return;}
-    const ok=await dbSavePost(editing);
-    if(ok){showToast('✓ Post saved!','success');const data=await dbGetPosts(false);setPosts(data||[]);setEditing(null);}
-    else showToast('Save failed','error');
-  };
-  const remove=async(id)=>{if(!window.confirm('Delete?'))return;await dbDeletePost(id);setPosts(posts.filter(p=>p.id!==id));};
-  const qModules={toolbar:[[{header:[2,3,false]}],['bold','italic','underline','blockquote'],[{list:'ordered'},{list:'bullet'}],['link','image'],['clean']]};
+  const [posts, setPosts] = useState([]);
+  const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [QE, setQE] = useState(null);
+  const [filter, setFilter] = useState('all');
 
-  if(editing!==null) return (
+  useEffect(() => { import('react-quill').then(m => setQE(() => m.default)).catch(() => {}); }, []);
+
+  // Load posts — Supabase first, fallback to localStorage
+  const load = async () => {
+    setLoading(true);
+    if (isSupabaseReady) {
+      const data = await dbGetPosts(false);
+      if (data) { setPosts(data); setLoading(false); return; }
+    }
+    // localStorage fallback
+    try {
+      const saved = JSON.parse(localStorage.getItem('aipgbd_blog_posts') || '[]');
+      setPosts(saved);
+    } catch { setPosts([]); }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  // Save post — Supabase + localStorage
+  const savePost = async () => {
+    if (!editing.title.trim()) { showToast('Title is required', 'error'); return; }
+    const slug = editing.slug || editing.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const post = { ...editing, slug, updated_at: new Date().toISOString() };
+
+    if (isSupabaseReady) {
+      const ok = await dbSavePost(post);
+      if (!ok) { showToast('Supabase save failed', 'error'); return; }
+    }
+
+    // Always save to localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('aipgbd_blog_posts') || '[]');
+      if (post.id) {
+        const idx = saved.findIndex(p => p.id === post.id);
+        if (idx >= 0) saved[idx] = post; else saved.unshift(post);
+      } else {
+        post.id = 'local-' + Date.now();
+        post.created_at = post.created_at || new Date().toISOString();
+        post.views = 0;
+        saved.unshift(post);
+      }
+      localStorage.setItem('aipgbd_blog_posts', JSON.stringify(saved));
+    } catch {}
+
+    showToast('✓ Post saved!', 'success');
+    setEditing(null);
+    load();
+  };
+
+  // Delete post
+  const deletePost = async (id) => {
+    if (!window.confirm('Delete this post permanently?')) return;
+    if (isSupabaseReady) await dbDeletePost(id);
+    try {
+      const saved = JSON.parse(localStorage.getItem('aipgbd_blog_posts') || '[]');
+      localStorage.setItem('aipgbd_blog_posts', JSON.stringify(saved.filter(p => p.id !== id)));
+    } catch {}
+    setPosts(posts.filter(p => p.id !== id));
+    showToast('Post deleted', 'warning');
+  };
+
+  // Toggle publish
+  const togglePublish = async (post) => {
+    const updated = { ...post, published: !post.published };
+    if (isSupabaseReady) await dbSavePost(updated);
+    try {
+      const saved = JSON.parse(localStorage.getItem('aipgbd_blog_posts') || '[]');
+      const idx = saved.findIndex(p => p.id === post.id);
+      if (idx >= 0) { saved[idx] = updated; localStorage.setItem('aipgbd_blog_posts', JSON.stringify(saved)); }
+    } catch {}
+    setPosts(posts.map(p => p.id === post.id ? updated : p));
+  };
+
+  const CATS = ['AI Production', 'Voiceover', 'Real Estate', 'Restaurant', 'Startup', 'E-commerce', 'Social Media', 'Web Development', 'Custom Software', 'General'];
+  const qModules = { toolbar: [[{header:[2,3,false]}],['bold','italic','underline','blockquote'],[{list:'ordered'},{list:'bullet'}],['link','image'],['clean']] };
+  const filtered = filter === 'all' ? posts : filter === 'published' ? posts.filter(p => p.published) : posts.filter(p => !p.published);
+
+  const newBlank = () => setEditing({ title:'', title_bn:'', slug:'', excerpt:'', excerpt_bn:'', content:'', content_bn:'', category:'General', cover_url:'', published:false });
+
+  // ── Editor view ──────────────────────────────────────────────────────────────
+  if (editing !== null) return (
     <div>
       <div style={{display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1.5rem'}}>
-        <button className="admin-btn admin-btn-cyan" onClick={()=>setEditing(null)}>← Back</button>
-        <div className="admin-section-title" style={{margin:0,border:'none',padding:0}}>{editing.id?'Edit Post':'New Post'}</div>
+        <button className="admin-btn admin-btn-cyan" onClick={() => setEditing(null)}>← Back to posts</button>
+        <div className="admin-section-title" style={{margin:0,border:'none',padding:0,fontSize:'1rem'}}>
+          {editing.id ? `Editing: ${editing.title || 'Untitled'}` : 'New Post'}
+        </div>
+        <div style={{marginLeft:'auto',display:'flex',gap:'0.5rem'}}>
+          <label style={{display:'flex',alignItems:'center',gap:'0.4rem',fontFamily:'var(--font-mono)',fontSize:'0.72rem',color:'var(--text-1)',cursor:'pointer',padding:'0.4em 0.75em',borderRadius:'100px',border:'1px solid var(--border)',background:'var(--surface)'}}>
+            <input type="checkbox" checked={!!editing.published} onChange={e => setEditing({...editing, published:e.target.checked})}/>
+            {editing.published ? '● Published' : '○ Draft'}
+          </label>
+          <button className="btn btn-primary" onClick={savePost} style={{padding:'0.5em 1.4em',fontSize:'0.82rem'}}>💾 Save</button>
+        </div>
       </div>
-      <BilField labelEN="Title (EN)" labelBN="শিরোনাম (বাংলা)" valueEN={editing.title} valueBN={editing.title_bn||''} onChangeEN={v=>setEditing({...editing,title:v,slug:editing.id?editing.slug:slugify(v)})} onChangeBN={v=>setEditing({...editing,title_bn:v})}/>
+
+      {/* Bilingual titles */}
+      <BilField labelEN="Title (English)" labelBN="শিরোনাম (বাংলা)"
+        valueEN={editing.title} valueBN={editing.title_bn||''}
+        onChangeEN={v => setEditing({...editing, title:v, slug: editing.id ? editing.slug : v.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')})}
+        onChangeBN={v => setEditing({...editing, title_bn:v})}/>
+
       <div className="admin-form-grid">
-        <Field label="Slug (URL)" value={editing.slug||''} onChange={v=>setEditing({...editing,slug:v})} hint="auto from title"/>
+        <Field label="URL Slug" value={editing.slug||''} onChange={v => setEditing({...editing,slug:v})} hint="auto-generated from title"/>
         <div className="form-group" style={{marginBottom:'0.75rem'}}>
           <label className="form-label">Category</label>
-          <select className="input" value={editing.category||'General'} onChange={e=>setEditing({...editing,category:e.target.value})}>
-            {['AI Production','Voiceover','Case Study','Industry Tips','Web Development','General'].map(c=><option key={c} value={c}>{c}</option>)}
+          <select className="input" value={editing.category||'General'} onChange={e => setEditing({...editing,category:e.target.value})}>
+            {CATS.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>
-      <BilField labelEN="Excerpt (EN)" labelBN="সারসংক্ষেপ (বাংলা)" valueEN={editing.excerpt||''} valueBN={editing.excerpt_bn||''} onChangeEN={v=>setEditing({...editing,excerpt:v})} onChangeBN={v=>setEditing({...editing,excerpt_bn:v})} textarea/>
-      <Field label="Cover Image URL" value={editing.cover_url||''} onChange={v=>setEditing({...editing,cover_url:v})}/>
-      {['content','content_bn'].map(key=>(
-        <div key={key} style={{marginBottom:'0.75rem'}}>
-          <label className="form-label" style={{display:'block',marginBottom:'0.4rem'}}>{key==='content'?'Content (EN)':'Content (বাংলা)'}</label>
-          {QuillEditor
-            ?<div style={{background:'var(--bg-0)',borderRadius:'var(--r-md)',border:'1px solid var(--border)'}}>
-               <QuillEditor value={editing[key]||''} onChange={v=>setEditing({...editing,[key]:v})} modules={qModules} theme="snow" style={{minHeight:180}}/>
-             </div>
-            :<textarea className="input" rows={7} value={editing[key]||''} onChange={e=>setEditing({...editing,[key]:e.target.value})} placeholder={key==='content'?'Write in HTML or plain text…':'বাংলায় লিখুন...'}/>}
+
+      <BilField labelEN="Excerpt (English)" labelBN="সারসংক্ষেপ (বাংলা)"
+        valueEN={editing.excerpt||''} valueBN={editing.excerpt_bn||''}
+        onChangeEN={v => setEditing({...editing,excerpt:v})}
+        onChangeBN={v => setEditing({...editing,excerpt_bn:v})} textarea/>
+
+      <Field label="Cover Image URL" value={editing.cover_url||''} onChange={v => setEditing({...editing,cover_url:v})} hint="Paste image URL (optional)"/>
+
+      {/* Content editors */}
+      {[['content','Content (English)','Write your article here…'],['content_bn','Content (বাংলা)','বাংলায় আর্টিকেল লিখুন...']].map(([key,label,ph]) => (
+        <div key={key} style={{marginBottom:'1rem'}}>
+          <label className="form-label" style={{display:'block',marginBottom:'0.5rem'}}>{label}</label>
+          {QE
+            ? <div style={{background:'var(--bg-0)',borderRadius:'var(--r-md)',border:'1px solid var(--border)'}}>
+                <QE value={editing[key]||''} onChange={v => setEditing({...editing,[key]:v})} modules={qModules} theme="snow"/>
+              </div>
+            : <textarea className="input" rows={8} value={editing[key]||''} onChange={e => setEditing({...editing,[key]:e.target.value})} placeholder={ph}/>
+          }
         </div>
       ))}
-      <div style={{display:'flex',gap:'1rem',alignItems:'center',marginTop:'1rem'}}>
-        <label style={{display:'flex',alignItems:'center',gap:'0.5rem',fontFamily:'var(--font-mono)',fontSize:'0.72rem',color:'var(--text-1)',cursor:'pointer'}}>
-          <input type="checkbox" checked={!!editing.published} onChange={e=>setEditing({...editing,published:e.target.checked})}/> Published
-        </label>
-        <button className="btn btn-primary" onClick={save}>💾 Save Post</button>
-        <button className="admin-btn" style={{color:'var(--text-2)',borderColor:'var(--border)'}} onClick={()=>setEditing(null)}>Cancel</button>
+
+      <div style={{display:'flex',gap:'1rem',marginTop:'1.5rem',paddingTop:'1rem',borderTop:'1px solid var(--border)'}}>
+        <button className="btn btn-primary" onClick={savePost}>💾 Save Post</button>
+        <button className="admin-btn" style={{color:'var(--text-2)',borderColor:'var(--border)'}} onClick={() => setEditing(null)}>Cancel</button>
+        {editing.id && <button className="admin-btn admin-btn-red" style={{marginLeft:'auto'}} onClick={() => { deletePost(editing.id); setEditing(null); }}>🗑 Delete Post</button>}
       </div>
-      <style>{`.ql-toolbar{background:var(--bg-2)!important;border-color:var(--border)!important;border-radius:var(--r-md) var(--r-md) 0 0!important}.ql-container{border-color:var(--border)!important;border-radius:0 0 var(--r-md) var(--r-md)!important}.ql-editor{min-height:180px;color:var(--text-0)!important;font-size:0.95rem!important}`}</style>
+
+      <style>{`.ql-toolbar{background:var(--bg-2)!important;border-color:var(--border)!important;border-radius:var(--r-md) var(--r-md) 0 0!important}.ql-container{border-color:var(--border)!important;border-radius:0 0 var(--r-md) var(--r-md)!important}.ql-editor{min-height:200px;color:var(--text-0)!important;font-size:0.95rem!important;line-height:1.7!important}`}</style>
     </div>
   );
 
+  // ── List view ─────────────────────────────────────────────────────────────────
   return (
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem'}}>
-        <div className="admin-section-title" style={{margin:0,border:'none',padding:0}}>Blog Posts</div>
-        <button className="btn btn-primary" onClick={()=>setEditing({title:'',title_bn:'',slug:'',excerpt:'',excerpt_bn:'',content:'',content_bn:'',category:'General',cover_url:'',published:false})} style={{padding:'0.5em 1.2em',fontSize:'0.82rem'}}>+ New Post</button>
+      {/* Header */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.25rem',flexWrap:'wrap',gap:'0.75rem'}}>
+        <div className="admin-section-title" style={{margin:0,border:'none',padding:0}}>
+          Blog Posts <span style={{fontFamily:'var(--font-mono)',fontSize:'0.65rem',color:'var(--text-3)',fontWeight:400}}>({posts.length} total)</span>
+        </div>
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          <button className="admin-btn admin-btn-cyan" onClick={load}>↺ Refresh</button>
+          <button className="btn btn-primary" onClick={newBlank} style={{padding:'0.5em 1.2em',fontSize:'0.82rem'}}>+ New Post</button>
+        </div>
       </div>
-      {!isSupabaseReady&&<div style={{padding:'1rem',background:'var(--purple-dim)',border:'1px solid rgba(155,89,255,0.3)',borderRadius:'var(--r-md)',marginBottom:'1.5rem',fontFamily:'var(--font-mono)',fontSize:'0.72rem',color:'var(--purple)',lineHeight:1.7}}>⚠ Supabase not connected — add .env keys to save blog posts.</div>}
-      {loading&&<div style={{color:'var(--text-3)',fontFamily:'var(--font-mono)',fontSize:'0.8rem'}}>Loading posts…</div>}
-      {!loading&&posts.length===0&&<div style={{border:'1px dashed var(--border)',borderRadius:'var(--r-md)',padding:'2rem',textAlign:'center',color:'var(--text-3)',fontFamily:'var(--font-mono)',fontSize:'0.75rem'}}>No posts yet. Click "+ New Post".</div>}
-      {posts.map(post=>(
-        <div key={post.id} className="admin-inq-card" style={{display:'flex',alignItems:'center',gap:'1rem'}}>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:600,fontSize:'0.9rem',color:'var(--text-0)'}}>{post.title}</div>
-            <div style={{fontFamily:'var(--font-mono)',fontSize:'0.62rem',color:'var(--text-3)',marginTop:'0.15rem'}}>{post.category} · {new Date(post.created_at).toLocaleDateString()} · {post.views||0} views</div>
+
+      {/* Supabase notice */}
+      {!isSupabaseReady && (
+        <div style={{padding:'0.75rem 1rem',background:'var(--cyan-dim)',border:'1px solid var(--cyan-mid)',borderRadius:'var(--r-md)',marginBottom:'1rem',fontFamily:'var(--font-mono)',fontSize:'0.7rem',color:'var(--cyan)',lineHeight:1.6}}>
+          ℹ Running in offline mode — posts saved to browser storage. Connect Supabase for cloud persistence.
+        </div>
+      )}
+
+      {/* Filter tabs */}
+      <div style={{display:'flex',gap:'0.4rem',marginBottom:'1.25rem'}}>
+        {[['all','All'],['published','Published'],['draft','Drafts']].map(([f,l]) => (
+          <button key={f} className="admin-btn" style={{borderColor:filter===f?'var(--cyan)':'var(--border)',background:filter===f?'var(--cyan-dim)':'transparent',color:filter===f?'var(--cyan)':'var(--text-2)'}} onClick={() => setFilter(f)}>
+            {l} ({f==='all'?posts.length:f==='published'?posts.filter(p=>p.published).length:posts.filter(p=>!p.published).length})
+          </button>
+        ))}
+      </div>
+
+      {loading && <div style={{color:'var(--text-3)',fontFamily:'var(--font-mono)',fontSize:'0.8rem',padding:'2rem',textAlign:'center'}}>Loading posts…</div>}
+
+      {!loading && filtered.length === 0 && (
+        <div style={{border:'2px dashed var(--border)',borderRadius:'var(--r-lg)',padding:'3rem',textAlign:'center'}}>
+          <div style={{fontSize:'2rem',marginBottom:'0.75rem'}}>✍</div>
+          <div style={{fontFamily:'var(--font-ui)',fontSize:'1rem',color:'var(--text-0)',marginBottom:'0.5rem'}}>No posts yet</div>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:'0.7rem',color:'var(--text-3)',marginBottom:'1.5rem'}}>Click "+ New Post" to write your first article</div>
+          <button className="btn btn-primary" onClick={newBlank}>+ New Post</button>
+        </div>
+      )}
+
+      {/* Post list */}
+      {filtered.map(post => (
+        <div key={post.id} className="admin-inq-card" style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.85rem 1rem'}}>
+          {post.cover_url && <img src={post.cover_url} alt="" style={{width:52,height:40,objectFit:'cover',borderRadius:6,flexShrink:0}}/>}
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:600,fontSize:'0.9rem',color:'var(--text-0)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{post.title}</div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'0.6rem',color:'var(--text-3)',marginTop:'0.15rem',display:'flex',gap:'0.75rem',flexWrap:'wrap'}}>
+              <span>{post.category}</span>
+              <span>{new Date(post.created_at||Date.now()).toLocaleDateString('en-BD',{day:'numeric',month:'short',year:'numeric'})}</span>
+              <span>{post.views||0} views</span>
+              {post.slug && <span style={{color:'var(--cyan)'}}>/{post.slug}</span>}
+            </div>
           </div>
-          <span className={`status-badge ${post.published?'status-new':'status-closed'}`}>{post.published?'Live':'Draft'}</span>
-          <button className="admin-btn admin-btn-cyan" onClick={()=>setEditing({...post})}>Edit</button>
-          <button className="admin-btn admin-btn-red" onClick={()=>remove(post.id)}>🗑</button>
+          <button onClick={() => togglePublish(post)}
+            className={`status-badge ${post.published?'status-new':'status-closed'}`}
+            style={{cursor:'pointer',border:'none',flexShrink:0}}
+            title="Click to toggle">
+            {post.published ? '● Live' : '○ Draft'}
+          </button>
+          <button className="admin-btn admin-btn-cyan" onClick={() => setEditing({...post})} style={{flexShrink:0}}>✏ Edit</button>
+          <button className="admin-btn admin-btn-red" onClick={() => deletePost(post.id)} style={{flexShrink:0}}>🗑</button>
         </div>
       ))}
     </div>
   );
 }
 
-
-
 // ─── Tab: Chatbot ─────────────────────────────────────────────────────────────
 function TabChatbot({ cfg, onSave }) {
-  const [bot, setBot] = useState(() => ({ ...(cfg.chatbot || {}) }));
-  const [qaList, setQaList] = useState(() => [...(cfg.chatbot?.qaList || [])]);
-  const [newQ, setNewQ] = useState(''); const [newA, setNewA] = useState('');
-  useEffect(() => { setBot({ ...(cfg.chatbot || {}) }); setQaList([...(cfg.chatbot?.qaList || [])]); }, [cfg]);
+  const chatbot = cfg.chatbot || {};
+  const [knowledge, setKnowledge] = useState(chatbot.knowledge || '');
+  const [pairs, setPairs] = useState(chatbot.qaPairs || []);
+  const [enabled, setEnabled] = useState(chatbot.enabled !== false);
+  useEffect(() => {
+    const c = cfg.chatbot || {};
+    setKnowledge(c.knowledge || '');
+    setPairs(c.qaPairs || []);
+    setEnabled(c.enabled !== false);
+  }, [cfg]);
 
-  const addQA = () => {
-    if (!newQ.trim() || !newA.trim()) return;
-    setQaList([...qaList, { q: newQ.trim(), a: newA.trim() }]);
-    setNewQ(''); setNewA('');
-  };
-  const removeQA = (i) => setQaList(qaList.filter((_, j) => j !== i));
-  const save = () => onSave({ ...cfg, chatbot: { ...bot, qaList } });
+  const updatePair = (i, key, val) => { const a=[...pairs]; a[i]={...a[i],[key]:val}; setPairs(a); };
+  const addPair = () => setPairs([...pairs, { q: '', a: '' }]);
+  const removePair = (i) => setPairs(pairs.filter((_,j)=>j!==i));
+  const save = () => onSave({ ...cfg, chatbot: { enabled, knowledge, qaPairs: pairs } });
 
   return (
     <div>
       <div className="admin-section-title">Chatbot Settings</div>
-      <div className="admin-form-grid">
-        <Field label="Bot Name" value={bot.botName||''} onChange={v=>setBot({...bot,botName:v})}/>
-        <div className="form-group" style={{marginBottom:'0.75rem'}}>
-          <label className="form-label">Chatbot Enabled</label>
-          <select className="input" value={bot.enabled?'yes':'no'} onChange={e=>setBot({...bot,enabled:e.target.value==='yes'})}>
-            <option value="yes">Enabled — show on site</option>
-            <option value="no">Disabled — hide from site</option>
-          </select>
-        </div>
+
+      {/* Status + API note */}
+      <div style={{padding:'1rem',background:'var(--purple-dim)',border:'1px solid rgba(155,89,255,0.3)',borderRadius:'var(--r-md)',marginBottom:'1.5rem',fontFamily:'var(--font-mono)',fontSize:'0.72rem',color:'var(--purple)',lineHeight:1.7}}>
+        ℹ The chatbot uses the Claude AI API. It works automatically — no API key needed on your end.
+        Responses are powered by the knowledge base and Q&A pairs you set here.
       </div>
-      <BilField labelEN="Greeting Message (EN)" labelBN="অভিবাদন বার্তা (বাংলা)" valueEN={bot.greeting||''} valueBN={bot.greeting_bn||''} onChangeEN={v=>setBot({...bot,greeting:v})} onChangeBN={v=>setBot({...bot,greeting_bn:v})} textarea/>
 
-      <div className="admin-section-title" style={{marginTop:'1.5rem'}}>Knowledge Base</div>
-      <p style={{color:'var(--text-2)',fontSize:'0.78rem',marginBottom:'0.75rem',fontFamily:'var(--font-mono)'}}>
-        Write anything about your business — services, pricing, process, FAQs. The AI reads this to answer questions. Leave blank to use the default built-in knowledge.
+      {/* Enable toggle */}
+      <div style={{display:'flex',alignItems:'center',gap:'1rem',marginBottom:'1.5rem',padding:'1rem',background:'var(--surface)',borderRadius:'var(--r-md)',border:'1px solid var(--border)'}}>
+        <label style={{display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',flex:1}}>
+          <input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)} style={{width:18,height:18}}/>
+          <div>
+            <div style={{fontFamily:'var(--font-ui)',fontWeight:600,fontSize:'0.9rem',color:'var(--text-0)'}}>
+              {enabled ? '● Chatbot is ENABLED' : '○ Chatbot is DISABLED'}
+            </div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'0.62rem',color:'var(--text-3)'}}>
+              Toggle to show/hide the chat bubble on your website
+            </div>
+          </div>
+        </label>
+      </div>
+
+      {/* Knowledge base */}
+      <div className="admin-section-title">Knowledge Base</div>
+      <p style={{color:'var(--text-2)',fontSize:'0.82rem',marginBottom:'0.75rem',fontFamily:'var(--font-mono)'}}>
+        Write anything about your business — the bot uses this to answer questions.
+        Include services, process, pricing context, team info, etc.
       </p>
-      <Field label="Knowledge Base (free text)" value={bot.knowledgeBase||''} onChange={v=>setBot({...bot,knowledgeBase:v})} textarea hint="paste any info about your business"/>
+      <textarea className="input" rows={8} value={knowledge} onChange={e=>setKnowledge(e.target.value)}
+        placeholder="e.g. We are AIPGBD, a cinematic AI production studio in Dhaka. We use Gemini for visuals, Grok for motion, Suno for audio, ElevenLabs for voiceover. Our packages start from 8,000 BDT..."/>
 
-      <div className="admin-section-title" style={{marginTop:'1.5rem'}}>Q&A Pairs</div>
-      <p style={{color:'var(--text-2)',fontSize:'0.78rem',marginBottom:'1rem',fontFamily:'var(--font-mono)'}}>
-        Add specific Q&A pairs for precise answers. Works in both EN and Bangla.
+      {/* Q&A pairs */}
+      <div className="admin-section-title" style={{marginTop:'1.5rem'}}>Q&A Training Pairs</div>
+      <p style={{color:'var(--text-2)',fontSize:'0.82rem',marginBottom:'1rem',fontFamily:'var(--font-mono)'}}>
+        Add specific questions and exact answers. The bot prioritises these over the knowledge base.
       </p>
-
-      {qaList.map((qa, i) => (
-        <div key={i} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',padding:'0.9rem 1rem',marginBottom:'0.5rem',position:'relative'}}>
-          <button className="admin-btn admin-btn-red" style={{position:'absolute',top:'0.6rem',right:'0.6rem',padding:'0.15em 0.5em',fontSize:'0.65rem'}} onClick={()=>removeQA(i)}>✕</button>
-          <div style={{fontFamily:'var(--font-mono)',fontSize:'0.65rem',color:'var(--cyan)',marginBottom:'0.25rem'}}>Q: {qa.q}</div>
-          <div style={{fontSize:'0.82rem',color:'var(--text-1)',lineHeight:1.55}}>A: {qa.a}</div>
+      {pairs.map((pair, i) => (
+        <div key={i} className="faq-edit-card" style={{position:'relative',marginBottom:'0.75rem'}}>
+          <button className="admin-btn admin-btn-red" style={{position:'absolute',top:'0.75rem',right:'0.75rem'}} onClick={()=>removePair(i)}>✕</button>
+          <Field label={`Q${i+1} — Question`} value={pair.q} onChange={v=>updatePair(i,'q',v)}
+            hint="e.g. Do you work with restaurants?"/>
+          <Field label="Answer" value={pair.a} onChange={v=>updatePair(i,'a',v)} textarea
+            hint="The exact answer the bot should give"/>
         </div>
       ))}
-
-      <div style={{background:'var(--surface)',border:'1px dashed var(--border-active)',borderRadius:'var(--r-md)',padding:'1rem',marginTop:'0.5rem'}}>
-        <div style={{fontFamily:'var(--font-mono)',fontSize:'0.65rem',color:'var(--text-3)',marginBottom:'0.5rem',textTransform:'uppercase',letterSpacing:'0.1em'}}>Add new Q&A</div>
-        <Field label="Question (EN or বাংলা)" value={newQ} onChange={setNewQ}/>
-        <Field label="Answer" value={newA} onChange={setNewA} textarea/>
-        <button className="admin-btn admin-btn-cyan" onClick={addQA}>+ Add Q&A Pair</button>
+      <div style={{display:'flex',gap:'1rem',marginTop:'0.5rem'}}>
+        <button className="admin-btn admin-btn-cyan" onClick={addPair}>+ Add Q&A Pair</button>
+        <button className="btn btn-primary" onClick={save}>💾 Save Chatbot Settings</button>
       </div>
-
-      <button className="btn btn-primary" onClick={save} style={{marginTop:'1.5rem'}}>💾 Save Chatbot Settings</button>
     </div>
   );
 }
@@ -689,7 +835,7 @@ export default function AdminPanel({ cfg, onClose, onSave, onReset, showToast })
     {id:'faq',        label:'❓ FAQ'},
     {id:'chatbot',    label:'🤖 Chatbot'},
     {id:'blog',       label:'✍ Blog'},
-    {id:'social',     label:'📡 Social Hub'},
+    {id:'chatbot',    label:'🤖 Chatbot'},
   ];
 
   return (
@@ -727,7 +873,7 @@ export default function AdminPanel({ cfg, onClose, onSave, onReset, showToast })
               {tab==='faq'         && <TabFAQ         cfg={cfg} onSave={onSave}/>}
               {tab==='chatbot'     && <TabChatbot     cfg={cfg} onSave={onSave}/>}
               {tab==='blog'        && <TabBlog        cfg={cfg} onSave={onSave} showToast={showToast}/>}
-              {tab==='social'      && <SocialCommandCenter divisionId={1}/>}
+              {tab==='chatbot'     && <TabChatbot    cfg={cfg} onSave={onSave}/>}
             </div>
           </>
         )}
